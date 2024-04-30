@@ -1,5 +1,6 @@
 import streamlit as st
 import warnings
+import numpy as np
 warnings.filterwarnings('ignore')
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,49 +39,51 @@ et=st.selectbox('Engine type',enginet,index=enginet.index('dohc'))#object type
 
 
 if st.button("Predict"):
-    import warnings
-    warnings.filterwarnings('ignore')
-    file1=open('scale1.pkl','rb') # here scale.pkl exist and file1 is a temporary file
-    file2=open('model1.pkl','rb') #here model.pkl exist and file2 is a temporary file
-    file3_1=open("LabelEncoder1.pkl","rb")
-    file3_2=open("LabelEncoder2.pkl","rb")
-    file3_3=open("LabelEncoder3.pkl","rb")
-    file3_4=open("LabelEncoder4.pkl","rb")
-    file3_5=open("LabelEncoder5.pkl","rb")
-    file3_6=open("LabelEncoder6.pkl","rb")
+    try:
+        # Load models and encoders
+        with open('scale1.pkl', 'rb') as file1, open('model1.pkl', 'rb') as file2, \
+                open("LabelEncoder1.pkl", "rb") as file3_1, open("LabelEncoder2.pkl", "rb") as file3_2, \
+                open("LabelEncoder3.pkl", "rb") as file3_3, open("LabelEncoder4.pkl", "rb") as file3_4, \
+                open("LabelEncoder5.pkl", "rb") as file3_5, open("LabelEncoder6.pkl", "rb") as file3_6:
+            # Read data from files
+            scale = pickle.load(file1)
+            model = pickle.load(file2)
+            e_label1 = pickle.load(file3_1)
+            e_label2 = pickle.load(file3_2)
+            e_label3 = pickle.load(file3_3)
+            e_label4 = pickle.load(file3_4)
+            e_label5 = pickle.load(file3_5)
+            e_label6 = pickle.load(file3_6)
 
-    import pickle
-    #To read data from file , use inbuilt method load() of pickle library
-    scale=pickle.load(file1) #scale user defined variable
-    model=pickle.load(file2)#model user defined variable
-    e_label1=pickle.load(file3_1)
-    e_label2=pickle.load(file3_2)
-    e_label3=pickle.load(file3_3)
-    e_label4=pickle.load(file3_4)
-    e_label5=pickle.load(file3_5)
-    e_label6=pickle.load(file3_6)
+            # Transform input data
+            x1 = e_label1.transform([make])[0]
+            x2 = e_label2.transform([ft])[0]
+            x3 = e_label3.transform([bs])[0]
+            x4 = e_label4.transform([dw])[0]
+            x5 = e_label5.transform([el])[0]
+            x6 = e_label6.transform([et])[0]
 
-    import numpy as np
-    x1=e_label1.transform([make])
-    x1=np.array([x1])
-    x2=e_label2.transform([ft])
-    x2=np.array([x2])
-    x3=e_label3.transform([bs])
-    x3=np.array([x3])
-    x4=e_label4.transform([dw])
-    x4=np.array([x4])
-    x5=e_label5.transform([el])
-    x5=np.array([x5])
-    x6=e_label6.transform([et])
-    x6=np.array([x6])
-    xf=[x1[0],x2[0],x3[0],x4[0],x5[0],x6[0],sym,nl,w,h,es,hp,cm,hm]
-    #change list x2 in numpy array 
-    X=np.array([xf])
-    features=scale.transform(X)
-    features
+            # Convert symbolic value to float
+            sym = float(sym)
 
-    Y_pred=model.predict(features)
-    #print("Predicted price = ",Y_pred)
-    st.write("Predicted price = ",Y_pred)
-    
+            # Create feature vector
+            xf = [x1, x2, x3, x4, x5, x6, sym, nl, w, h, es, hp, cm, hm]
 
+            # Verify data types and shapes
+            for item in xf:
+                print(type(item), item)
+
+            # Transform features
+            X = np.array([xf]).astype(float)
+
+            # Verify shape
+            print(X.shape)
+
+            # Predict
+            Y_pred = model.predict(X)
+            st.write("Predicted price = ", Y_pred)
+
+    except FileNotFoundError:
+        st.error("Error: One or more required files not found.")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
